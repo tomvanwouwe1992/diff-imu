@@ -21,12 +21,14 @@ def main():
     args.train_platform_type = 'TensorboardPlatform'
     args.overwrite = True
     args.save_interval = 1000
-    # args.dataset = 'humanact12'
-    os.chdir('/home/tom/motion-diffusion-model')
-    if os.path.exists(os.path.join(os.getcwd(),'save','trying_stuff')):
-        shutil.rmtree(os.path.join(os.getcwd(),'save','trying_stuff'))
+    current_working_directory = os.getcwd()
+    current_working_directory = os.path.dirname(os.path.dirname(current_working_directory))
+    output_directory = os.path.join(current_working_directory,'diff-imu-output')
+    os.chdir(output_directory)
+    if os.path.exists(os.path.join(os.getcwd(),'save','trying_stuff_2')):
+        shutil.rmtree(os.path.join(os.getcwd(),'save','trying_stuff_2'))
+    args.save_dir = 'save/trying_stuff_2'
 
-    args.save_dir = 'save/trying_stuff'
     fixseed(args.seed)
     train_platform_type = eval(args.train_platform_type)
     train_platform = train_platform_type(args.save_dir)
@@ -45,7 +47,7 @@ def main():
     dist_util.setup_dist(args.device)
 
     print("creating data loader...")
-    data = get_dataset_loader(name=args.dataset, batch_size=args.batch_size, num_frames=args.num_frames)
+    data = get_dataset_loader(name=args.dataset, batch_size=args.batch_size, num_frames=args.num_frames, data_folder = output_directory)
 
     print("creating model and diffusion...")
     model, diffusion = create_model_and_diffusion(args, data)

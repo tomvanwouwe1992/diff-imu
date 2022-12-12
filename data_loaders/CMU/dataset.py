@@ -85,18 +85,25 @@ class Dataset(torch.utils.data.Dataset):
 
     def _load(self, ind, frame_ix):
         pose = self._load_pose(ind, frame_ix)
-        pose = torch.from_numpy(np.reshape(pose,(60,25,1)))
+
+        pose = torch.from_numpy(pose)
+        # pose = torch.from_numpy(np.reshape(pose,(60,25,1)))
         root = torch.from_numpy(self._load_root(ind, frame_ix))
         imu = self._load_imu(ind, frame_ix)
         imu = torch.from_numpy(np.reshape(imu,(60,14,3,3)))
         imu = geometry.matrix_to_rotation_6d(imu)
+        imu = torch.reshape(imu, (60,14*6))
+        # padded_pose = torch.zeros((imu.shape[0], pose.shape[1], imu.shape[2]), dtype=imu.dtype)
+        # padded_root = torch.zeros((imu.shape[0], 1, imu.shape[2]), dtype=imu.dtype)
+        # padded_root[:,0,:3] = root
+        # padded_pose[:,:,0] = pose[:,:,0]
+        # ret = torch.cat((imu, padded_root,padded_pose), 1)
+        # ret = ret.permute(1, 2, 0).contiguous()
 
-        padded_pose = torch.zeros((imu.shape[0], pose.shape[1], imu.shape[2]), dtype=imu.dtype)
-        padded_root = torch.zeros((imu.shape[0], 1, imu.shape[2]), dtype=imu.dtype)
-        padded_root[:,0,:3] = root
-        padded_pose[:,:,0] = pose[:,:,0]
-        ret = torch.cat((imu, padded_root,padded_pose), 1)
+        ret = torch.cat((imu, root, pose), 1)
+        ret = torch.reshape(ret, (60,112,1))
         ret = ret.permute(1, 2, 0).contiguous()
+
         # if pose_rep == "xyz" or self.translation:
         #     if getattr(self, "_load_joints3D", None) is not None:
         #         # Locate the root joint of initial pose at origin

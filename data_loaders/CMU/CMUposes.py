@@ -6,12 +6,12 @@ from .dataset import Dataset
 class CMUPoses(Dataset):
     dataname = "CMU"
 
-    def __init__(self, datapath="/home/tom/motion-diffusion-model/dataset/CMUPoses", split="train", **kargs):
-        self.datapath = datapath
+    def __init__(self, data_folder, split="train", **kargs):
+        self.datapath = data_folder
 
         super().__init__(**kargs)
 
-        pkldatafilepath = os.path.join(datapath, "CMUPoses.pkl")
+        pkldatafilepath = os.path.join(self.datapath , "CMUPoses.pkl")
         data = pkl.load(open(pkldatafilepath, "rb"))
 
         self._time = [x[:,0] for x in data]
