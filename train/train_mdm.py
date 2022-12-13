@@ -18,9 +18,10 @@ def main():
     args = train_args()
     args.seed = 10
     args.dataset = 'CMU'
+    args.batch_size = 128
     args.train_platform_type = 'TensorboardPlatform'
     args.overwrite = True
-    args.save_interval = 1000
+    args.save_interval = 5000
     current_working_directory = os.getcwd()
     current_working_directory = os.path.dirname(os.path.dirname(current_working_directory))
     output_directory = os.path.join(current_working_directory,'diff-imu-output')
