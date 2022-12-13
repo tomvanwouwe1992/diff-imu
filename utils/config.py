@@ -1,6 +1,10 @@
 import os
 
-SMPL_DATA_PATH = "/home/tom/motion-diffusion-model/body_models/smpl"
+
+current_working_directory = os.getcwd()
+current_working_directory = os.path.dirname(current_working_directory)
+
+SMPL_DATA_PATH = os.path.join(current_working_directory,'body_models','smpl')
 
 SMPL_KINTREE_PATH = os.path.join(SMPL_DATA_PATH, "kintree_table.pkl")
 SMPL_MODEL_PATH = os.path.join(SMPL_DATA_PATH, "SMPL_NEUTRAL.pkl")
