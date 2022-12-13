@@ -3,12 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="1e363f98-c294-41ef-8ad9-aea755196fd6" name="Changes" comment="first commit Tevet paper">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_loaders/CMU/CMUposes.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_loaders/CMU/CMUposes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_loaders/CMU/dataset.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_loaders/CMU/dataset.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_loaders/get_data.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_loaders/get_data.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/sample/generate.py" beforeDir="false" afterPath="$PROJECT_DIR$/sample/generate.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/train/train_mdm.py" beforeDir="false" afterPath="$PROJECT_DIR$/train/train_mdm.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/model_util.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/model_util.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
