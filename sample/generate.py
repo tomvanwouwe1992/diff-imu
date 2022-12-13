@@ -20,7 +20,7 @@ from data_loaders.tensors import collate
 
 
 def main():
-    model_name = 'model000012000.pt'
+    model_name = 'model000000000.pt'
     current_working_directory = os.getcwd()
     current_working_directory = os.path.dirname(os.path.dirname(current_working_directory))
     output_directory = os.path.join(current_working_directory, 'diff-imu-output')
@@ -80,9 +80,9 @@ def main():
     print("Creating model and diffusion...")
     model, diffusion = create_model_and_diffusion(args, data)
 
-    print(f"Loading checkpoints from [{args.model_path}]...")
-    state_dict = torch.load(args.model_path, map_location='cpu')
-    load_model_wo_clip(model, state_dict)
+    # print(f"Loading checkpoints from [{args.model_path}]...")
+    # state_dict = torch.load(args.model_path, map_location='cpu')
+    # load_model_wo_clip(model, state_dict)
 
     if args.guidance_param != 1:
         model = ClassifierFreeSampleModel(model)   # wrapping model with the classifier-free sampler
@@ -109,6 +109,20 @@ def main():
     all_lengths = []
     all_text = []
 
+    labels = ['time', 'pelvis_tx', 'pelvis_ty', 'pelvis_tz', 'pelvis_tilt', 'pelvis_rot', 'pelvis_tilt',
+              'hip_flexion_l', 'hip_flexion_r',
+              'hip_adduction_l', 'hip_adduction_r',
+              'hip_rotation_l', 'hip_rotation_r',
+              'knee_angle_l', 'knee_angle_r',
+              'ankle_angle_l', 'ankle_angle_r',
+              'subtalar_angle_l', 'subtalar_angle_r',
+              'lumbar_extension', 'lumbar_bending', 'lumbar_rotation',
+              'arm_flex_l', 'arm_flex_r',
+              'arm_add_l', 'arm_add_r',
+              'arm_rot_l', 'arm_rot_r',
+              'elbow_flex_l', 'elbow_flex_r',
+              'pro_sup_l', 'pro_sup_r']
+
     for rep_i in range(args.num_repetitions):
         print(f'### Sampling [repetitions #{rep_i}]')
 
@@ -132,78 +146,46 @@ def main():
         )
         save_path = os.path.join(output_directory,'save','trying_stuff','sample_' + str(rep_i))
         torch.save(sample,save_path)
-    #     # Recover XYZ *positions* from HumanML3D vector representation
-    #     if model.data_rep == 'hml_vec':
-    #         n_joints = 22 if sample.shape[1] == 263 else 21
-    #         sample = data.dataset.t2m_dataset.inv_transform(sample.cpu().permute(0, 2, 3, 1)).float()
-    #         sample = recover_from_ric(sample, n_joints)
-    #         sample = sample.view(-1, *sample.shape[2:]).permute(0, 2, 3, 1)
-    #
-    #     rot2xyz_pose_rep = 'xyz' if model.data_rep in ['xyz', 'hml_vec'] else model.data_rep
-    #     rot2xyz_mask = None if rot2xyz_pose_rep == 'xyz' else model_kwargs['y']['mask'].reshape(args.batch_size, n_frames).bool()
-    #     sample = model.rot2xyz(x=sample, mask=rot2xyz_mask, pose_rep=rot2xyz_pose_rep, glob=True, translation=True,
-    #                            jointstype='smpl', vertstrans=True, betas=None, beta=0, glob_rot=None,
-    #                            get_rotations_back=False)
-    #
-    #     if args.unconstrained:
-    #         all_text += ['unconstrained'] * args.num_samples
-    #     else:
-    #         text_key = 'text' if 'text' in model_kwargs['y'] else 'action_text'
-    #         all_text += model_kwargs['y'][text_key]
-    #
-    #     all_motions.append(sample.cpu().numpy())
-    #     all_lengths.append(model_kwargs['y']['lengths'].cpu().numpy())
-    #
-    #     print(f"created {len(all_motions) * args.batch_size} samples")
-    #
-    #
-    # all_motions = np.concatenate(all_motions, axis=0)
-    # all_motions = all_motions[:total_num_samples]  # [bs, njoints, 6, seqlen]
-    # all_text = all_text[:total_num_samples]
-    # all_lengths = np.concatenate(all_lengths, axis=0)[:total_num_samples]
-    #
-    # if os.path.exists(out_path):
-    #     shutil.rmtree(out_path)
-    # os.makedirs(out_path)
-    #
-    # npy_path = os.path.join(out_path, 'results.npy')
-    # print(f"saving results file to [{npy_path}]")
-    # np.save(npy_path,
-    #         {'motion': all_motions, 'text': all_text, 'lengths': all_lengths,
-    #          'num_samples': args.num_samples, 'num_repetitions': args.num_repetitions})
-    # with open(npy_path.replace('.npy', '.txt'), 'w') as fw:
-    #     fw.write('\n'.join(all_text))
-    # with open(npy_path.replace('.npy', '_len.txt'), 'w') as fw:
-    #     fw.write('\n'.join([str(l) for l in all_lengths]))
-    #
-    # print(f"saving visualizations to [{out_path}]...")
-    # skeleton = paramUtil.kit_kinematic_chain if args.dataset == 'kit' else paramUtil.t2m_kinematic_chain
-    #
-    # sample_files = []
-    # num_samples_in_out_file = 7
-    #
-    # sample_print_template, row_print_template, all_print_template, \
-    # sample_file_template, row_file_template, all_file_template = construct_template_variables(args.unconstrained)
-    #
-    # for sample_i in range(args.num_samples):
-    #     rep_files = []
-    #     for rep_i in range(args.num_repetitions):
-    #         caption = all_text[rep_i*args.batch_size + sample_i]
-    #         length = all_lengths[rep_i*args.batch_size + sample_i]
-    #         motion = all_motions[rep_i*args.batch_size + sample_i].transpose(2, 0, 1)[:length]
-    #         save_file = sample_file_template.format(sample_i, rep_i)
-    #         print(sample_print_template.format(caption, sample_i, rep_i, save_file))
-    #         animation_save_path = os.path.join(out_path, save_file)
-    #         plot_3d_motion(animation_save_path, skeleton, motion, dataset=args.dataset, title=caption, fps=fps)
-    #         # Credit for visualization: https://github.com/EricGuo5513/text-to-motion
-    #         rep_files.append(animation_save_path)
-    #
-    #     sample_files = save_multiple_samples(args, out_path,
-    #                                            row_print_template, all_print_template, row_file_template, all_file_template,
-    #                                            caption, num_samples_in_out_file, rep_files, sample_files, sample_i)
-    #
-    # abs_path = os.path.abspath(out_path)
-    # print(f'[Done] Results are at [{abs_path}]')
+
+
+        sample = torch.squeeze(sample).cpu()
+        print(sample.size())
+        sample = sample.permute((0,2,1))
+        print(sample.size())
+
+
+        for i in range(sample.size()[0]):
+            time = np.reshape(np.linspace(0, 3, 60), (60, 1))
+            sample_pelvis_rotation = 0 * sample[i, :, :3].numpy()  # still wrong
+            sample_pelvis_translation = sample[i, :, 84:87].numpy()
+            sample_pose = sample[i, :, 87:].numpy()
+            data = np.concatenate((time, sample_pelvis_translation, sample_pelvis_rotation, sample_pose), 1)
+            numpy2storage(labels, data,
+                          os.path.join(output_directory,'save','trying_stuff','sample_' + str(rep_i) + '_' + str(i) + '.mot'))
+
+
+
+def numpy2storage(labels, data, storage_file):
+    assert data.shape[1] == len(labels), "# labels doesn't match columns"
+    assert labels[0] == "time"
+
+    f = open(storage_file, 'w')
+    f.write('name %s\n' % storage_file)
+    f.write('datacolumns %d\n' % data.shape[1])
+    f.write('datarows %d\n' % data.shape[0])
+    f.write('range %f %f\n' % (np.min(data[:, 0]), np.max(data[:, 0])))
+    f.write('endheader \n')
+
+    for i in range(len(labels)):
+        f.write('%s\t' % labels[i])
+    f.write('\n')
+
+    for i in range(data.shape[0]):
+        for j in range(data.shape[1]):
+            f.write('%20.8f\t' % data[i, j])
+        f.write('\n')
+
+    f.close()
 
 
 def save_multiple_samples(args, out_path, row_print_template, all_print_template, row_file_template, all_file_template,
