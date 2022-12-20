@@ -18,7 +18,7 @@ def main():
     args = train_args()
     args.seed = 10
     args.dataset = 'CMU'
-    args.batch_size = 64
+    args.batch_size = 256
     args.train_platform_type = 'TensorboardPlatform'
     args.overwrite = True
     args.save_interval = 5000
