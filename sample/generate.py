@@ -20,7 +20,7 @@ from data_loaders.tensors import collate
 
 
 def main():
-    model_name = 'model000000000.pt'
+    model_name = 'model000030000.pt'
     current_working_directory = os.getcwd()
     current_working_directory = os.path.dirname(os.path.dirname(current_working_directory))
     output_directory = os.path.join(current_working_directory, 'diff-imu-output')
@@ -81,8 +81,8 @@ def main():
     model, diffusion = create_model_and_diffusion(args, data)
 
     # print(f"Loading checkpoints from [{args.model_path}]...")
-    # state_dict = torch.load(args.model_path, map_location='cpu')
-    # load_model_wo_clip(model, state_dict)
+    state_dict = torch.load(args.model_path, map_location='cpu')
+    load_model_wo_clip(model, state_dict)
 
     if args.guidance_param != 1:
         model = ClassifierFreeSampleModel(model)   # wrapping model with the classifier-free sampler
@@ -109,7 +109,7 @@ def main():
     all_lengths = []
     all_text = []
 
-    labels = ['time', 'pelvis_tx', 'pelvis_ty', 'pelvis_tz', 'pelvis_tilt', 'pelvis_rot', 'pelvis_tilt',
+    labels = ['time', 'pelvis_tx', 'pelvis_ty', 'pelvis_tz', 'pelvis_tilt', 'pelvis_rot', 'pelvis_list',
               'hip_flexion_l', 'hip_flexion_r',
               'hip_adduction_l', 'hip_adduction_r',
               'hip_rotation_l', 'hip_rotation_r',
@@ -155,10 +155,13 @@ def main():
 
 
         for i in range(sample.size()[0]):
-            time = np.reshape(np.linspace(0, 3, 60), (60, 1))
+            time = np.reshape(np.linspace(0, 2.95, 60), (60, 1))
+            print(time)
             sample_pelvis_rotation = 0 * sample[i, :, :3].numpy()  # still wrong
-            sample_pelvis_translation = sample[i, :, 84:87].numpy()
-            sample_pose = sample[i, :, 87:].numpy()
+            # sample_pelvis_translation = 0 * sample[i, :, 84:87].numpy()
+            sample_pelvis_translation = 0 * sample[i, :, :3].numpy()
+            # sample_pose = sample[i, :, 87:].numpy()
+            sample_pose = sample[i, :, :].numpy()
             data = np.concatenate((time, sample_pelvis_translation, sample_pelvis_rotation, sample_pose), 1)
             numpy2storage(labels, data,
                           os.path.join(output_directory,'save','trying_stuff','sample_' + str(rep_i) + '_' + str(i) + '.mot'))

@@ -34,6 +34,7 @@ def get_model_args(args, data):
     # SMPL defaults
     data_rep = 'rot6d'
     if args.dataset == 'CMU':
+        # njoints = 25 # for opensim pose parameters only
         njoints = 112
         nfeats = 1
     else:

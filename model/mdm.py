@@ -30,7 +30,7 @@ class MDM(nn.Module):
         self.latent_dim = latent_dim
 
         self.ff_size = ff_size
-        self.num_layers = num_layers
+        self.num_layers = 10
         self.num_heads = num_heads
         self.dropout = dropout
 

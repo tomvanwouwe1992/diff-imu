@@ -18,17 +18,18 @@ def main():
     args = train_args()
     args.seed = 10
     args.dataset = 'CMU'
-    args.batch_size = 128
+    args.batch_size = 64
     args.train_platform_type = 'TensorboardPlatform'
     args.overwrite = True
     args.save_interval = 5000
+    # args.resume_checkpoint = os.path.join(os.getcwd(),'save','trying_stuff_2','model000015000.pt')
     current_working_directory = os.getcwd()
     current_working_directory = os.path.dirname(os.path.dirname(current_working_directory))
     output_directory = os.path.join(current_working_directory,'diff-imu-output')
     os.chdir(output_directory)
-    if os.path.exists(os.path.join(os.getcwd(),'save','trying_stuff_2')):
-        shutil.rmtree(os.path.join(os.getcwd(),'save','trying_stuff_2'))
-    args.save_dir = 'save/trying_stuff_2'
+    if os.path.exists(os.path.join(os.getcwd(),'save','trying_stuff')):
+        shutil.rmtree(os.path.join(os.getcwd(),'save','trying_stuff'))
+    args.save_dir = 'save/trying_stuff'
 
     fixseed(args.seed)
     train_platform_type = eval(args.train_platform_type)

@@ -86,8 +86,8 @@ class Dataset(torch.utils.data.Dataset):
     def _load(self, ind, frame_ix):
         pose = self._load_pose(ind, frame_ix)
 
-        pose = torch.from_numpy(pose)
-        # pose = torch.from_numpy(np.reshape(pose,(60,25,1)))
+        # pose = torch.from_numpy(pose)
+        pose = torch.from_numpy(np.reshape(pose,(60,25)))
         root = torch.from_numpy(self._load_root(ind, frame_ix))
         imu = self._load_imu(ind, frame_ix)
         imu = torch.from_numpy(np.reshape(imu,(60,14,3,3)))
@@ -102,6 +102,10 @@ class Dataset(torch.utils.data.Dataset):
 
         ret = torch.cat((imu, root, pose), 1)
         ret = torch.reshape(ret, (60,112,1))
+        #
+        # ret = pose
+        # ret = torch.reshape(ret, (60, 25, 1))
+
         ret = ret.permute(1, 2, 0).contiguous()
 
         # if pose_rep == "xyz" or self.translation:
