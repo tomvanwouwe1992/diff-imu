@@ -21,7 +21,7 @@ def main():
     args.batch_size = 256
     args.train_platform_type = 'TensorboardPlatform'
     args.overwrite = True
-    args.save_interval = 5000
+    args.save_interval = 10000
     # args.resume_checkpoint = os.path.join(os.getcwd(),'save','trying_stuff_2','model000015000.pt')
     current_working_directory = os.getcwd()
     current_working_directory = os.path.dirname(os.path.dirname(current_working_directory))
