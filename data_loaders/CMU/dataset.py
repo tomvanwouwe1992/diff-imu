@@ -161,6 +161,7 @@ class Dataset(torch.utils.data.Dataset):
         return ret.float()
 
     def _get_item_data_index(self, data_index):
+        print(data_index)
         nframes = self._num_frames_in_video[data_index]
 
         if self.num_frames == -1 and (self.max_len == -1 or nframes <= self.max_len):

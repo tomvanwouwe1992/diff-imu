@@ -20,7 +20,7 @@ from data_loaders.tensors import collate
 
 
 def main():
-    model_name = 'model000030000.pt'
+    model_name = 'model000600040.pt'
     current_working_directory = os.getcwd()
     current_working_directory = os.path.dirname(os.path.dirname(current_working_directory))
     output_directory = os.path.join(current_working_directory, 'diff-imu-output')
@@ -151,17 +151,15 @@ def main():
         sample = torch.squeeze(sample).cpu()
         print(sample.size())
         sample = sample.permute((0,2,1))
-        print(sample.size())
+
 
 
         for i in range(sample.size()[0]):
             time = np.reshape(np.linspace(0, 2.95, 60), (60, 1))
-            print(time)
+            sample_imu = sample[i, :, :14*6].numpy()
             sample_pelvis_rotation = 0 * sample[i, :, :3].numpy()  # still wrong
-            # sample_pelvis_translation = 0 * sample[i, :, 84:87].numpy()
-            sample_pelvis_translation = 0 * sample[i, :, :3].numpy()
-            # sample_pose = sample[i, :, 87:].numpy()
-            sample_pose = sample[i, :, :].numpy()
+            sample_pelvis_translation = sample[i, :, 14*6:14*6+3].numpy()
+            sample_pose = sample[i, :, 14*6+3:].numpy()
             data = np.concatenate((time, sample_pelvis_translation, sample_pelvis_rotation, sample_pose), 1)
             numpy2storage(labels, data,
                           os.path.join(output_directory,'save','trying_stuff','sample_' + str(rep_i) + '_' + str(i) + '.mot'))

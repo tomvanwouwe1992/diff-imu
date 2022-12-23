@@ -223,13 +223,13 @@ def generate_args(model_path):
     return parse_and_load_from_model(parser, model_path)
 
 
-def edit_args():
+def edit_args(model_path):
     parser = ArgumentParser()
     # args specified by the user: (all other will be loaded from the model)
     add_base_options(parser)
     add_sampling_options(parser)
     add_edit_options(parser)
-    return parse_and_load_from_model(parser)
+    return parse_and_load_from_model(parser, model_path)
 
 
 def evaluation_parser():

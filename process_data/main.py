@@ -223,6 +223,7 @@ if __name__=="__main__":
     body_kinematics_output_to_training_data_representation = False
     generate_training_datastructure = True
     zero_offset_pelvisX_pelvisZ = True
+
     bodies = ['pelvis',
               'femur_r', 'tibia_r', 'talus_r',
               'femur_l', 'tibia_l', 'talus_l',
