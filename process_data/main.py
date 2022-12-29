@@ -1,5 +1,5 @@
 import numpy as np
-# import opensim
+import opensim
 import os
 from scipy.spatial.transform import Rotation
 from matplotlib import pyplot as plt
@@ -8,6 +8,9 @@ import itertools
 import pandas
 from scipy.interpolate import interp1d
 import math, pickle
+import utils.rotation_conversions as geometry
+import torch
+
 
 def execute_body_kinematics(subject,path_motion_data):
 
@@ -92,23 +95,21 @@ def transform_kinematics_output_to_training_data_representation(subject, path_mo
         labels = ['time']
         if 'BodyKinematics_pos' in trial and 'larger' not in trial:
             path_body_kinematics_trial = os.path.join(path_body_kinematics, trial)
-
-            # if os.path.exists(os.path.join(path_motion_data_training_representation_subject, trial[:-15] + '.pkl')) == False:
-
             table_body_kinematics_trial = opensim.TimeSeriesTable(path_body_kinematics_trial)
-
             matrix_body_kinematics_position = table_body_kinematics_trial.getMatrix().to_numpy()
             time_vector_body_kinematics_position = np.asarray(table_body_kinematics_trial.getIndependentColumn())
-            column_labels_body_kinematics_position = table_body_kinematics_trial.getColumnLabels()
-
             column_labels_body_kinematics_position = table_body_kinematics_trial.getColumnLabels()
             if table_body_kinematics_trial.getTableMetaDataAsString('inDegrees') == 'yes':
                 angle_multiplier = np.pi / 180
             else:
                 angle_multiplier = 1
 
-            euler_angles = np.zeros((np.shape(time_vector_body_kinematics_position)[0], 3))
+            path_inverse_kinematics_trial = os.path.join(path_inverse_kinematics, trial[:-30] + '_ik.mot')
+            table_inverse_kinematics_trial = opensim.TimeSeriesTable(path_inverse_kinematics_trial)
+            matrix_inverse_kinematics_position = table_inverse_kinematics_trial.getMatrix().to_numpy()
+            column_labels_inverse_kinematics_position = table_inverse_kinematics_trial.getColumnLabels()
 
+            euler_angles = np.zeros((np.shape(time_vector_body_kinematics_position)[0], 3))
             data_matrix = np.zeros((np.shape(time_vector_body_kinematics_position)[0], len(bodies) * (9) + len(joints) + 1 + 3))
             data_matrix[:, 0] = time_vector_body_kinematics_position
 
@@ -120,7 +121,7 @@ def transform_kinematics_output_to_training_data_representation(subject, path_mo
                 euler_angles[:, 1] = matrix_body_kinematics_position[:, index_Oy]
                 euler_angles[:, 2] = matrix_body_kinematics_position[:, index_Oz]
                 euler_angles = angle_multiplier * euler_angles
-                rotation_body = Rotation.from_euler('xyz', euler_angles)
+                rotation_body = Rotation.from_euler('XYZ', euler_angles)
                 rotation_body_matrix = rotation_body.as_matrix()
                 rotation_body_matrix_flattened = np.reshape(rotation_body_matrix,(np.shape(time_vector_body_kinematics_position)[0],9))
                 rotation_body_quaternion = rotation_body.as_quat()
@@ -136,21 +137,31 @@ def transform_kinematics_output_to_training_data_representation(subject, path_mo
                 labels.append(body + '_rotation_matrix_7')
                 labels.append(body + '_rotation_matrix_8')
                 labels.append(body + '_rotation_matrix_9')
-
                 # labels.append(body + '_quat_1')
                 # labels.append(body + '_quat_2')
                 # labels.append(body + '_quat_3')
                 # labels.append(body + '_quat_4')
-
                 data_matrix[:, i*(9) + 1:(i + 1)*(9) + 1] = rotation_body_matrix_flattened
 
-            index_ik = inverse_kinematics_files.index(trial[:-30] + '_ik.mot')
+                # pelvis_pose = np.zeros((np.shape(time_vector_body_kinematics_position)[0], 3))
+                # if body == 'pelvis':
+                #     index_pelvis_tilt = column_labels_inverse_kinematics_position.index('pelvis_tilt')
+                #     index_pelvis_list = column_labels_inverse_kinematics_position.index('pelvis_list')
+                #     index_pelvis_rotation = column_labels_inverse_kinematics_position.index('pelvis_rotation')
+                #     pelvis_pose[:, 0] = matrix_inverse_kinematics_position[:, index_pelvis_tilt]
+                #     pelvis_pose[:, 1] = matrix_inverse_kinematics_position[:, index_pelvis_list]
+                #     pelvis_pose[:, 2] = matrix_inverse_kinematics_position[:, index_pelvis_rotation]
+                #
+                #     rotation_pelvis = Rotation.from_matrix(rotation_body_matrix)
+                #     rotation_pelvis_euler_xyz = rotation_pelvis.as_euler('xyz')
+                #     rotation_pelvis_euler_XYZ = rotation_pelvis.as_euler('XYZ')
+                #     rotation_pelvis_euler_ZXY = rotation_pelvis.as_euler('ZXY')
+                #     # rotation_pelvis_euler_zxy = rotation_pelvis.as_euler('zxy')
+                #     # rotation_pelvis_euler_zyx = rotation_pelvis.as_euler('zyx')
+                #     pelvis_pose_from_body_kin = geometry.matrix_to_euler_angles(torch.from_numpy(rotation_body_matrix),'XYZ')
+                #     pelvis_pose_from_body_kin = pelvis_pose_from_body_kin.numpy()
+                #     print('test')
 
-            path_inverse_kinematics_trial = os.path.join(path_inverse_kinematics, trial[:-30] + '_ik.mot')
-            table_inverse_kinematics_trial = opensim.TimeSeriesTable(path_inverse_kinematics_trial)
-
-            matrix_inverse_kinematics_position = table_inverse_kinematics_trial.getMatrix().to_numpy()
-            column_labels_inverse_kinematics_position = table_inverse_kinematics_trial.getColumnLabels()
 
             for i, joint in enumerate(joints):
                 index = column_labels_inverse_kinematics_position.index(joint)
@@ -220,7 +231,7 @@ def generate_training_datastructure_from_trials(subject, path_motion_data):
 if __name__=="__main__":
 
     run_body_kinematics = False
-    body_kinematics_output_to_training_data_representation = False
+    body_kinematics_output_to_training_data_representation = True
     generate_training_datastructure = True
     zero_offset_pelvisX_pelvisZ = True
 
@@ -245,7 +256,7 @@ if __name__=="__main__":
 
     path_main = os.path.dirname(os.path.dirname(os.getcwd()))
     path_motion_data = os.path.join(path_main,'diff-imu-input', 'processMotionData','motionData')
-
+    path_motion_data = "G:\My Drive\IMU\processMotionData\motionData"
     if run_body_kinematics == True:
         opensim.Logger.setLevelString('error')
         subjects = os.listdir(path_motion_data)
@@ -294,93 +305,6 @@ if __name__=="__main__":
     print('CMU')
 
 
-
-
-
-
-
-
-
-# for subject in subjects:
-#     path_motion_data_subject =  os.path.join(path_motion_data, subject)
-#     path_opensim_model = os.path.join(path_motion_data_subject, 'osim_results', 'Models', 'optimized_scale_and_markers.osim')
-#     path_inverse_kinematics = os.path.join(path_motion_data_subject, 'osim_results','IK')
-#     inverse_kinematics_all_files = os.listdir(path_inverse_kinematics)
-#     motion_ext = ['.mot']
-#     inverse_kinematics_motion_files = [file_name for file_name in inverse_kinematics_all_files if any(sub in file_name for sub in motion_ext)]
-#     for trial in inverse_kinematics_motion_files:
-#         path_to_file =  os.path.join(path_motion_data_subject, 'osim_results', 'BK', trial[:-7] + '_BodyKinematics_pos_global.sto')
-#         if os.path.exists(path_to_file) == False:
-#             path_inverse_kinematics_trial = os.path.join(path_inverse_kinematics, trial)
-#             table_inverse_kinematics_trial = opensim.TimeSeriesTable(path_inverse_kinematics_trial)
-#             time_vector_inverse_kinematics_trial_position = np.asarray(table_inverse_kinematics_trial.getIndependentColumn())
-#             path_results_folder = os.path.join(path_motion_data_subject, 'osim_results', 'BK')
-#
-#             opensim_model = opensim.Model(path_opensim_model)
-#
-#             ## body kinematics
-#             opensim_body_kinematics = opensim.BodyKinematics()
-#             opensim_model.addAnalysis(opensim_body_kinematics)
-#             opensim_model.initSystem()
-#             opensim_analyze_tool = opensim.AnalyzeTool(opensim_model)
-#             opensim_analyze_tool.setLoadModelAndInput(True)
-#             opensim_analyze_tool.setResultsDir(path_results_folder)
-#             opensim_analyze_tool.setName(trial[:-7])
-#             opensim_analyze_tool.setCoordinatesFileName(path_inverse_kinematics_trial)
-#             opensim_analyze_tool.setStartTime(time_vector_inverse_kinematics_trial_position[0])
-#             opensim_analyze_tool.setFinalTime(time_vector_inverse_kinematics_trial_position[-1])
-#             opensim_analyze_tool.run()
-#
-#             print('Subject ' + subject + ' trial ' + trial + ' processed.')
-
-#
-#
-# path_body_kinematics_position = os.path.join(path_results_folder,trial + '_BodyKinematics_pos_global.sto')
-#
-# # Create time-series table with coordinate values.
-# table_body_kinematics_position = opensim.TimeSeriesTable(path_body_kinematics_position)
-# matrix_body_kinematics_position = table_body_kinematics_position.getMatrix().to_numpy()
-# time_vector_body_kinematics_position = np.asarray(table_body_kinematics_position.getIndependentColumn())
-# column_labels_body_kinematics_position = table_body_kinematics_position.getColumnLabels()
-# index = table_body_kinematics_position.getColumnIndex(column_labels_body_kinematics_position[3])
-#
-# if  table_body_kinematics_position.getTableMetaDataAsString('inDegrees') == 'yes':
-#     angle_multiplier = np.pi/180
-# else:
-#     angle_multiplier = 1
-#
-#
-# euler_angles = np.zeros((np.shape(time_vector_body_kinematics_position)[0], 3))
-# for body in bodies:
-#     fig, axs = plt.subplots(1, 3, sharex=True)
-#     fig.suptitle(body)
-#
-#
-#     index_Ox = column_labels_body_kinematics_position.index(body + '_Ox')
-#     index_Oy = column_labels_body_kinematics_position.index(body + '_Oy')
-#     index_Oz = column_labels_body_kinematics_position.index(body + '_Oz')
-#     euler_angles[:, 0] = matrix_body_kinematics_position[:, index_Ox]
-#     euler_angles[:, 1] = matrix_body_kinematics_position[:, index_Oy]
-#     euler_angles[:, 2] = matrix_body_kinematics_position[:, index_Oz]
-#     euler_angles = angle_multiplier * euler_angles
-#     rotation_body = Rotation.from_euler('xyz',euler_angles)
-#     rotation_body_matrix = rotation_body.as_matrix()
-#     rotation_body_quaternion = rotation_body.as_quat()
-#
-#     titles_dim = ['euler', 'rotation matrix', 'quaternion']
-#     for i, ax in enumerate(axs.flat):
-#         if i == 0:
-#             ax.plot(time_vector_body_kinematics_position, euler_angles)
-#         elif i == 1:
-#             rotation_body_matrix_reshaped = np.reshape(rotation_body_matrix, (np.shape(time_vector_body_kinematics_position)[0],9))
-#             ax.plot(time_vector_body_kinematics_position, rotation_body_matrix_reshaped)
-#         elif i == 2:
-#             ax.plot(time_vector_body_kinematics_position, rotation_body_quaternion)
-#
-#         ax.set_title(titles_dim[i])
-#
-# plt.show()
-#
 
 
 
