@@ -2,6 +2,7 @@ import numpy as np
 import opensim
 import os
 from scipy.spatial.transform import Rotation
+import utils.rotation_conversions as geometry
 from matplotlib import pyplot as plt
 import multiprocessing
 import itertools
@@ -10,7 +11,7 @@ from scipy.interpolate import interp1d
 import math, pickle
 import utils.rotation_conversions as geometry
 import torch
-
+import tests
 
 def execute_body_kinematics(subject,path_motion_data):
 
@@ -61,18 +62,24 @@ def transform_kinematics_output_to_training_data_representation(subject, path_mo
               'torso',
               'humerus_r', 'radius_r', 'hand_r',
               'humerus_l', 'radius_l', 'hand_l']
-    joints = ['hip_flexion_l', 'hip_flexion_r',
-              'hip_adduction_l', 'hip_adduction_r',
-              'hip_rotation_l', 'hip_rotation_r',
-              'knee_angle_l', 'knee_angle_r',
-              'ankle_angle_l', 'ankle_angle_r',
-              'subtalar_angle_l', 'subtalar_angle_r',
+    joints = ['hip_flexion_r', 'hip_adduction_r',
+               'hip_rotation_r', 'knee_angle_r',
+              'ankle_angle_r', 'subtalar_angle_r',
+              'hip_flexion_l', 'hip_adduction_l', 'hip_rotation_l',
+              'knee_angle_l', 'ankle_angle_l',
+              'subtalar_angle_l',
               'lumbar_extension', 'lumbar_bending', 'lumbar_rotation',
-              'arm_flex_l', 'arm_flex_r',
-              'arm_add_l', 'arm_add_r',
-              'arm_rot_l', 'arm_rot_r',
-              'elbow_flex_l', 'elbow_flex_r',
-              'pro_sup_l', 'pro_sup_r']
+              'arm_flex_r',
+              'arm_add_r',
+               'arm_rot_r',
+               'elbow_flex_r',
+              'pro_sup_r',
+              'arm_flex_l',
+              'arm_add_l',
+              'arm_rot_l',
+              'elbow_flex_l',
+              'pro_sup_l',
+              ]
 
     opensim.Logger.setLevelString('error')
     path_motion_data_subject = os.path.join(path_motion_data, subject)
@@ -113,6 +120,7 @@ def transform_kinematics_output_to_training_data_representation(subject, path_mo
             data_matrix = np.zeros((np.shape(time_vector_body_kinematics_position)[0], len(bodies) * (9) + len(joints) + 1 + 3))
             data_matrix[:, 0] = time_vector_body_kinematics_position
 
+            # 3D body rotation
             for i, body in enumerate(bodies):
                 index_Ox = column_labels_body_kinematics_position.index(body + '_Ox')
                 index_Oy = column_labels_body_kinematics_position.index(body + '_Oy')
@@ -121,13 +129,16 @@ def transform_kinematics_output_to_training_data_representation(subject, path_mo
                 euler_angles[:, 1] = matrix_body_kinematics_position[:, index_Oy]
                 euler_angles[:, 2] = matrix_body_kinematics_position[:, index_Oz]
                 euler_angles = angle_multiplier * euler_angles
-                rotation_body = Rotation.from_euler('XYZ', euler_angles)
-                rotation_body_matrix = rotation_body.as_matrix()
+
+                rotation_body_matrix = Rotation.from_euler('XYZ', euler_angles).as_matrix()
+
+                # Check orthogonality
+                assert np.linalg.det(rotation_body_matrix).all() == 1
+
                 rotation_body_matrix_flattened = np.reshape(rotation_body_matrix,(np.shape(time_vector_body_kinematics_position)[0],9))
-                rotation_body_quaternion = rotation_body.as_quat()
-                # labels.append(body + '_euler_X')
-                # labels.append(body + '_euler_Y')
-                # labels.append(body + '_euler_Z')
+
+                data_matrix[:, i * (9) + 1:(i + 1) * (9) + 1] = rotation_body_matrix_flattened
+
                 labels.append(body + '_rotation_matrix_1')
                 labels.append(body + '_rotation_matrix_2')
                 labels.append(body + '_rotation_matrix_3')
@@ -137,54 +148,40 @@ def transform_kinematics_output_to_training_data_representation(subject, path_mo
                 labels.append(body + '_rotation_matrix_7')
                 labels.append(body + '_rotation_matrix_8')
                 labels.append(body + '_rotation_matrix_9')
-                # labels.append(body + '_quat_1')
-                # labels.append(body + '_quat_2')
-                # labels.append(body + '_quat_3')
-                # labels.append(body + '_quat_4')
-                data_matrix[:, i*(9) + 1:(i + 1)*(9) + 1] = rotation_body_matrix_flattened
 
-                # pelvis_pose = np.zeros((np.shape(time_vector_body_kinematics_position)[0], 3))
-                # if body == 'pelvis':
-                #     index_pelvis_tilt = column_labels_inverse_kinematics_position.index('pelvis_tilt')
-                #     index_pelvis_list = column_labels_inverse_kinematics_position.index('pelvis_list')
-                #     index_pelvis_rotation = column_labels_inverse_kinematics_position.index('pelvis_rotation')
-                #     pelvis_pose[:, 0] = matrix_inverse_kinematics_position[:, index_pelvis_tilt]
-                #     pelvis_pose[:, 1] = matrix_inverse_kinematics_position[:, index_pelvis_list]
-                #     pelvis_pose[:, 2] = matrix_inverse_kinematics_position[:, index_pelvis_rotation]
-                #
-                #     rotation_pelvis = Rotation.from_matrix(rotation_body_matrix)
-                #     rotation_pelvis_euler_xyz = rotation_pelvis.as_euler('xyz')
-                #     rotation_pelvis_euler_XYZ = rotation_pelvis.as_euler('XYZ')
-                #     rotation_pelvis_euler_ZXY = rotation_pelvis.as_euler('ZXY')
-                #     # rotation_pelvis_euler_zxy = rotation_pelvis.as_euler('zxy')
-                #     # rotation_pelvis_euler_zyx = rotation_pelvis.as_euler('zyx')
-                #     pelvis_pose_from_body_kin = geometry.matrix_to_euler_angles(torch.from_numpy(rotation_body_matrix),'XYZ')
-                #     pelvis_pose_from_body_kin = pelvis_pose_from_body_kin.numpy()
-                #     print('test')
-
-
+            # joint coordinates (not pelvis)
             for i, joint in enumerate(joints):
                 index = column_labels_inverse_kinematics_position.index(joint)
-                labels.append(joint)
                 joint_position = matrix_inverse_kinematics_position[:, index]
+
                 data_matrix[:, (len(bodies))*(9) + 1 + i] = joint_position
 
+                labels.append(joint)
 
-            pelvis_position = np.zeros((np.shape(time_vector_body_kinematics_position)[0], 3))
+            # pelvis translation
+            pelvis_translation = np.zeros((np.shape(time_vector_body_kinematics_position)[0], 3))
             index_Ox = column_labels_body_kinematics_position.index('pelvis_X')
             index_Oy = column_labels_body_kinematics_position.index('pelvis_Y')
             index_Oz = column_labels_body_kinematics_position.index('pelvis_Z')
+
+            pelvis_translation[:, 0] = matrix_body_kinematics_position[:, index_Ox]
+            pelvis_translation[:, 1] = matrix_body_kinematics_position[:, index_Oy]
+            pelvis_translation[:, 2] = matrix_body_kinematics_position[:, index_Oz]
+
+            data_matrix[:,-3:] = pelvis_translation
+
             labels.append('pelvis_X')
             labels.append('pelvis_Y')
             labels.append('pelvis_Z')
-            pelvis_position[:, 0] = matrix_body_kinematics_position[:, index_Ox]
-            pelvis_position[:, 1] = matrix_body_kinematics_position[:, index_Oy]
-            pelvis_position[:, 2] = matrix_body_kinematics_position[:, index_Oz]
-            data_matrix[:,-3:] = pelvis_position
 
+
+            # run test
+            tests.test_diff_to_motion_file(data_matrix, matrix_inverse_kinematics_position, column_labels_inverse_kinematics_position)
+
+            # generate data frame
             data_frame = pandas.DataFrame(data_matrix,index = None, columns = labels)
 
-
+            # save stuff
             data_frame.to_pickle(os.path.join(path_motion_data_training_representation_subject, trial[:-15] + '.pkl'))
             print('Subject ' + subject + ' trial ' + trial + ' processed.')
 
@@ -256,7 +253,7 @@ if __name__=="__main__":
 
     path_main = os.path.dirname(os.path.dirname(os.getcwd()))
     path_motion_data = os.path.join(path_main,'diff-imu-input', 'processMotionData','motionData')
-    path_motion_data = "G:\My Drive\IMU\processMotionData\motionData"
+    path_motion_data = 'C:/Users/tom_v\My Drive\IMU\processMotionData\motionData'
     if run_body_kinematics == True:
         opensim.Logger.setLevelString('error')
         subjects = os.listdir(path_motion_data)

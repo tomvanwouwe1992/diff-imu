@@ -173,20 +173,23 @@ def main():
             inpainted_motion_pelvis_rotation = inpainted_pelvis_rotation_euler.numpy()  # still wrong
             inpainted_motion_pelvis_translation = inpainted_motion_repetition[i, :, 14 * 6:14 * 6 + 3].numpy()
             inpainted_motion_pose = inpainted_motion_repetition[i, :, 14 * 6 + 3:].numpy()
+
             print('size of inpainted motion rotation', inpainted_motion_pelvis_rotation.shape)
             print('size of inpainted motion translation', inpainted_motion_pelvis_translation.shape)
             print('size of inpainted motion pose', inpainted_motion_pose.shape)
+
             data_inpainted_motion = np.concatenate((time, inpainted_motion_pelvis_translation, inpainted_motion_pelvis_rotation, inpainted_motion_pose), 1)
             data = np.concatenate((time, sample_pelvis_translation, sample_pelvis_rotation, sample_pose), 1)
             diff = data-data_inpainted_motion
+
             numpy2storage(labels, data,
                           os.path.join(output_directory, 'save', 'trying_stuff',
-                                       'sample_' + str(rep_i) + '_' + str(i) + '.mot'))
+                                       'sample_' + str(rep_i) + '_' + str(i) + '.mot'), False)
             numpy2storage(labels, data_inpainted_motion,
                           os.path.join(output_directory, 'save', 'trying_stuff',
-                                       'sample_inpainted_' + str(rep_i) + '_' + str(i) + '.mot'))
+                                       'sample_inpainted_' + str(rep_i) + '_' + str(i) + '.mot'), False)
 
-def numpy2storage(labels, data, storage_file):
+def numpy2storage(labels, data, storage_file, inDegrees):
     assert data.shape[1] == len(labels), "# labels doesn't match columns"
     assert labels[0] == "time"
 
@@ -195,6 +198,10 @@ def numpy2storage(labels, data, storage_file):
     f.write('datacolumns %d\n' % data.shape[1])
     f.write('datarows %d\n' % data.shape[0])
     f.write('range %f %f\n' % (np.min(data[:, 0]), np.max(data[:, 0])))
+    if inDegrees:
+        f.write('inDegrees = yes')
+    else:
+        f.write('inDegrees = no')
     f.write('endheader \n')
 
     for i in range(len(labels)):
